@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo Pong Simples</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #111;
+            margin: 0;
+            overflow: hidden; /* Evita barras de rolagem se o jogo for grande */
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #gameArea {
+            position: relative; /* Necessário para posicionar os elementos filhos absolutamente */
+            width: 800px;
+            height: 600px;
+            background-color: black;
+            border: 3px solid white;
+            overflow: hidden; /* Garante que a bola não saia visualmente */
+        }
+
+        .paddle {
+            position: absolute;
+            width: 15px;
+            height: 100px;
+            background-color: white;
+        }
+
+        #paddleLeft {
+            left: 10px;
+            top: calc(50% - 50px); /* Centraliza verticalmente */
+        }
+
+        #paddleRight {
+            right: 10px;
+            top: calc(50% - 50px); /* Centraliza verticalmente */
+        }
+
+        #ball {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: white;
+            left: calc(50% - 7.5px); /* Centraliza horizontalmente */
+            top: calc(50% - 7.5px);  /* Centraliza verticalmente */
+            border-radius: 50%; /* Deixa a bola redonda */
+        }
+
+        .score {
+            position: absolute;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            top: 20px;
+            user-select: none; /* Impede a seleção do texto do placar */
+        }
+
+        #scoreLeft {
+            left: 25%;
+            transform: translateX(-50%);
+        }
+
+        #scoreRight {
+            right: 25%;
+            transform: translateX(50%);
+        }
+
+        /* Linha pontilhada no meio (opcional) */
+        #centerLine {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px; /* Largura da linha */
+            transform: translateX(-50%);
+            border-left: 4px dashed rgba(255, 255, 255, 0.5); /* Linha tracejada */
+            height: 100%;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="gameArea">
+        <div id="centerLine"></div>
+        <div id="scoreLeft" class="score">0</div>
+        <div id="scoreRight" class="score">0</div>
+        <div id="paddleLeft" class="paddle"></div>
+        <div id="paddleRight" class="paddle"></div>
+        <div id="ball"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Elementos do Jogo
+            const gameArea = document.getElementById('gameArea');
+            const paddleLeft = document.getElementById('paddleLeft');
+            const paddleRight = document.getElementById('paddleRight');
+            const ball = document.getElementById('ball');
+            const scoreLeftElement = document.getElementById('scoreLeft');
+            const scoreRightElement = document.getElementById('scoreRight');
+
+            // Dimensões (pegas dinamicamente se possível, ou fixas)
+            const gameHeight = gameArea.clientHeight;
+            const gameWidth = gameArea.clientWidth;
+            const paddleHeight = paddleLeft.offsetHeight;
+            const ballSize = ball.offsetWidth; // Assumindo largura == altura
+
+            // Estado do Jogo
+            let ballX = gameWidth / 2 - ballSize / 2;
+            let ballY = gameHeight / 2 - ballSize / 2;
+            let ballSpeedX = 5; // Velocidade horizontal inicial
+            let ballSpeedY = 5; // Velocidade vertical inicial
+
+            let paddleLeftY = gameHeight / 2 - paddleHeight / 2;
+            let paddleRightY = gameHeight / 2 - paddleHeight / 2;
+            const paddleSpeed = 8;
+
+            let scoreLeft = 0;
+            let scoreRight = 0;
+
+            // Rastreamento de Teclas Pressionadas
+            const keysPressed = {};
+
+            document.addEventListener('keydown', (event) => {
+                keysPressed[event.key.toLowerCase()] = true; // Armazena a tecla em minúsculas
+            });
+
+            document.addEventListener('keyup', (event) => {
+                keysPressed[event.key.toLowerCase()] = false;
+            });
+
+            // Função para resetar a bola
+            function resetBall() {
+                ballX = gameWidth / 2 - ballSize / 2;
+                ballY = gameHeight / 2 - ballSize / 2;
+
+                // Inverte a direção horizontal e adiciona um pouco de aleatoriedade vertical
+                ballSpeedX *= -1;
+                ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 4 + 3); // Velocidade vertical entre 3 e 7
+            }
+
+            // Função principal do Loop do Jogo
+            function gameLoop() {
+                // --- Movimentação das Raquetes ---
+                // Raquete Esquerda (W e S)
+                if (keysPressed['w'] && paddleLeftY > 0) {
+                    paddleLeftY -= paddleSpeed;
+                }
+                if (keysPressed['s'] && paddleLeftY < gameHeight - paddleHeight) {
+                    paddleLeftY += paddleSpeed;
+                }
+                // Garante que a raquete não saia da tela (clamp)
+                 paddleLeftY = Math.max(0, Math.min(gameHeight - paddleHeight, paddleLeftY));
+
+
+                // Raquete Direita (Seta para Cima e Seta para Baixo)
+                if (keysPressed['arrowup'] && paddleRightY > 0) {
+                    paddleRightY -= paddleSpeed;
+                }
+                if (keysPressed['arrowdown'] && paddleRightY < gameHeight - paddleHeight) {
+                    paddleRightY += paddleSpeed;
+                }
+                 // Garante que a raquete não saia da tela (clamp)
+                paddleRightY = Math.max(0, Math.min(gameHeight - paddleHeight, paddleRightY));
+
+                // Atualiza a posição visual das raquetes
+                paddleLeft.style.top = `${paddleLeftY}px`;
+                paddleRight.style.top = `${paddleRightY}px`;
+
+                // --- Movimentação da Bola ---
+                ballX += ballSpeedX;
+                ballY += ballSpeedY;
+
+                // --- Colisões da Bola ---
+                // Colisão com as paredes superior e inferior
+                if (ballY <= 0 || ballY >= gameHeight - ballSize) {
+                    ballSpeedY *= -1;
+                     // Garante que a bola não fique presa na borda
+                    ballY = Math.max(0, Math.min(gameHeight - ballSize, ballY));
+                }
+
+                // Colisão com a raquete esquerda
+                if (
+                    ballX <= paddleLeft.offsetLeft + paddleLeft.offsetWidth && // Está na horizontal da raquete
+                    ballX > paddleLeft.offsetLeft && // Evita colisão por trás
+                    ballY + ballSize > paddleLeftY &&         // Bate na parte de baixo da raquete
+                    ballY < paddleLeftY + paddleHeight      // Bate na parte de cima da raquete
+                ) {
+                    ballSpeedX *= -1;
+                    // Opcional: Mudar ângulo baseado em onde bateu na raquete
+                    let deltaY = ballY - (paddleLeftY + paddleHeight / 2);
+                    ballSpeedY = deltaY * 0.3; // Ajuste a sensibilidade conforme necessário
+                    ballX = paddleLeft.offsetLeft + paddleLeft.offsetWidth; // Evita ficar presa
+                }
+
+                // Colisão com a raquete direita
+                if (
+                    ballX + ballSize >= paddleRight.offsetLeft && // Está na horizontal da raquete
+                    ballX < paddleRight.offsetLeft + paddleRight.offsetWidth && // Evita colisão por trás
+                    ballY + ballSize > paddleRightY &&          // Bate na parte de baixo da raquete
+                    ballY < paddleRightY + paddleHeight       // Bate na parte de cima da raquete
+                ) {
+                    ballSpeedX *= -1;
+                     // Opcional: Mudar ângulo baseado em onde bateu na raquete
+                    let deltaY = ballY - (paddleRightY + paddleHeight / 2);
+                    ballSpeedY = deltaY * 0.3; // Ajuste a sensibilidade conforme necessário
+                    ballX = paddleRight.offsetLeft - ballSize; // Evita ficar presa
+                }
+
+                // --- Pontuação ---
+                if (ballX < 0) { // Ponto para o jogador direito
+                    scoreRight++;
+                    scoreRightElement.textContent = scoreRight;
+                    resetBall();
+                } else if (ballX > gameWidth - ballSize) { // Ponto para o jogador esquerdo
+                    scoreLeft++;
+                    scoreLeftElement.textContent = scoreLeft;
+                    resetBall();
+                }
+
+                // Atualiza a posição visual da bola
+                ball.style.left = `${ballX}px`;
+                ball.style.top = `${ballY}px`;
+
+                // Chama o próximo quadro da animação
+                requestAnimationFrame(gameLoop);
+            }
+
+            // Inicia o jogo
+            resetBall(); // Posiciona a bola inicialmente
+            requestAnimationFrame(gameLoop); // Começa o loop do jogo
+        });
+    </script>
+</body>
+</html>
